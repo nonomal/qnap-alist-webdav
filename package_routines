@@ -133,37 +133,47 @@
 
 pkg_pre_install() {
 CONF=/etc/config/qpkg.conf
-QPKG_NAME="alist"
-QPKG_ROOT=`/sbin/getcfg $QPKG_NAME Install_Path -f ${CONF}`
+QPKG_NAME="openlist"
+QPKG_ROOT=$(/sbin/getcfg $QPKG_NAME Install_Path -f ${CONF})
+sqlite3=$("/sbin/getcfg" "CacheMount" "Install_Path" -f "/etc/config/qpkg.conf")/bin/sqlite3
+Ver=4.2.5
 
     if [ -f "$QPKG_ROOT/data/data.db" ]; then
+		killall openlist
+		$sqlite3 $QPKG_ROOT/data/data.db 'PRAGMA wal_checkpoint;'
+		$sqlite3 $QPKG_ROOT/data/data.db '.quit'
         mv $QPKG_ROOT/data/data.db $QPKG_ROOT/data/_data.db
     fi
 }
 
 pkg_post_install() {
 CONF=/etc/config/qpkg.conf
-QPKG_NAME="alist"
-QPKG_ROOT=`/sbin/getcfg $QPKG_NAME Install_Path -f ${CONF}`
-sqlite3="$QPKG_ROOT/sqlite3"
-Ver=3.13.2
-
-	chmod -Rf 777 $QPKG_ROOT/alist
+QPKG_NAME="openlist"
+QPKG_ROOT=$(/sbin/getcfg $QPKG_NAME Install_Path -f ${CONF})
+sqlite3=$(/sbin/getcfg CacheMount Install_Path -f /etc/config/qpkg.conf)/bin/sqlite3
+Ver=4.2.5
+    
+	chmod -Rf 777 $QPKG_ROOT/openlist
+    
     if [ -f "$QPKG_ROOT/data/_data.db" ]; then
         mv $QPKG_ROOT/data/_data.db $QPKG_ROOT/data/data.db
-		$sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='<div class="markdown-body"><h4>&#x6B22;&#x8FCE;&#x4F7F;&#x7528;<code>Alist</code>&#x7BA1;&#x7406;&#x4E91;&#x76D8;&#x7A7A;&#x95F4;</h4><table><tbody><tr><td>&#x5728;&#x7EBF;&#x7248;&#x672C;</td><td><a href="https://github.com/iranee/qnap-alist-webdav"><img src="https://img.shields.io/github/v/release/iranee/qnap-alist-webdav?color=3\&\label=Releases"></a></td></tr><tr><td>&#x672C;&#x5730;&#x7248;&#x672C;</td><td><img src="https://img.shields.io/badge/Version-v$Ver-yellowgreen"></td></tr></tbody></table><ul><li>&#x5982;&#x4F55;&#x4F7F;&#x7528;&#xFF1A;<br></a><a href="https://alist.nn.ci/zh/guide/">https://alist.nn.ci/zh/guide</a></li><li><a href="/@login">&#x767B;&#x5F55;</a> &#x540E;&#x8FDB;&#x5165;&#x3010;<a href="/@manage/storages">&#x7BA1;&#x7406;/&#x5B58;&#x50A8;</a>&#x3011;<br>&#x9875;&#x9762;&#x6302;&#x8F7D;&#x7F51;&#x76D8;</li></ul></div>' WHERE key='announcement';"
+        $sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='多云盘挂载' WHERE key='site_title';"
+        $sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='<div class=\"markdown-body\"><h4>&#x6B22;&#x8FCE;&#x4F7F;&#x7528;<code>OpenList</code>&#x7BA1;&#x7406;&#x4E91;&#x76D8;&#x7A7A;&#x95F4;</h4><table><tbody><tr><td>&#x5728;&#x7EBF;&#x7248;&#x672C;</td><td><a href=\"https://github.com/iranee/qnap-openlist-webdav\" target=\"_blank\"><img src=\"https://img.shields.io/github/v/release/iranee/qnap-openlist-webdav?color=3\&\label=Releases\"></a></td></tr><tr><td>&#x672C;&#x5730;&#x7248;&#x672C;</td><td><img src=\"https://img.shields.io/badge/Version-v$Ver-yellowgreen\"></td></tr></tbody></table><ul><li>&#x5982;&#x4F55;&#x4F7F;&#x7528;&#xFF1A;<br></a><a href=\"https://doc.oplist.org/guide/\">https://doc.oplist.org/guide</a></li><li>&#x767B;&#x5F55; &#x540E;&#x8FDB;&#x5165;&#x3010;<a href=\"/@manage/storages\">&#x7BA1;&#x7406;/&#x5B58;&#x50A8;</a>&#x3011;<br>&#x9875;&#x9762;&#x6302;&#x8F7D;&#x7F51;&#x76D8;</li></ul></div>' WHERE key='announcement';"
     else
-        $QPKG_ROOT/alist --force-bin-dir admin
-		sleep 2
-        if [ ! -f "$QPKG_ROOT/data/data.db" ]; then
-            /sbin/log_tool  -N "多云盘挂载" -G "Error" -t1 -uSystem -p127.0.0.1 -mlocalhost -a "[多云盘挂载] 无法生成数据库文件，请检查编译版本是否正确，系统构架：$(uname -r)-$(uname -m)。"
+        cd $QPKG_ROOT
+        $QPKG_ROOT/openlist admin set 123456
+        timeout=30
+        while [ $timeout -gt 0 ] && [ ! -f "$QPKG_ROOT/data/data.db" ]; do
+            sleep 1
+            timeout=$((timeout - 1))
+        done
+        
+        if [ -f "$QPKG_ROOT/data/data.db" ]; then
+            $sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='多云盘挂载' WHERE key='site_title';"
+            $sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='<div class=\"markdown-body\"><h4>&#x6B22;&#x8FCE;&#x4F7F;&#x7528;<code>OpenList</code>&#x7BA1;&#x7406;&#x4E91;&#x76D8;&#x7A7A;&#x95F4;</h4><table><tbody><tr><td>&#x5728;&#x7EBF;&#x7248;&#x672C;</td><td><a href=\"https://github.com/iranee/qnap-openlist-webdav\" target=\"_blank\"><img src=\"https://img.shields.io/github/v/release/iranee/qnap-openlist-webdav?color=3\&\label=Releases\"></a></td></tr><tr><td>&#x672C;&#x5730;&#x7248;&#x672C;</td><td><img src=\"https://img.shields.io/badge/Version-v$Ver-yellowgreen\"></td></tr></tbody></table><ul><li>&#x5982;&#x4F55;&#x4F7F;&#x7528;&#xFF1A;<br></a><a href=\"https://doc.oplist.org/guide/\">https://doc.oplist.org/guide</a></li><li>&#x767B;&#x5F55; &#x540E;&#x8FDB;&#x5165;&#x3014;<a href=\"/@manage/storages\">&#x7BA1;&#x7406;/&#x5B58;&#x50A8;</a>&#x3011;<br>&#x9875;&#x9762;&#x6302;&#x8F7D;&#x7F51;&#x76D8;</li></ul></div>' WHERE key='announcement';"
         else
-			$sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_users SET password='123456' WHERE username='admin'"
-			$sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='多云盘挂载' WHERE key='site_title';"
-			$sqlite3 $QPKG_ROOT/data/data.db "UPDATE x_setting_items SET value='<div class="markdown-body"><h4>&#x6B22;&#x8FCE;&#x4F7F;&#x7528;<code>Alist</code>&#x7BA1;&#x7406;&#x4E91;&#x76D8;&#x7A7A;&#x95F4;</h4><table><tbody><tr><td>&#x5728;&#x7EBF;&#x7248;&#x672C;</td><td><a href="https://github.com/iranee/qnap-alist-webdav"><img src="https://img.shields.io/github/v/release/iranee/qnap-alist-webdav?color=3\&\label=Releases"></a></td></tr><tr><td>&#x672C;&#x5730;&#x7248;&#x672C;</td><td><img src="https://img.shields.io/badge/Version-v$Ver-yellowgreen"></td></tr></tbody></table><ul><li>&#x5982;&#x4F55;&#x4F7F;&#x7528;&#xFF1A;<br></a><a href="https://alist.nn.ci/zh/guide/">https://alist.nn.ci/zh/guide</a></li><li><a href="/@login">&#x767B;&#x5F55;</a> &#x540E;&#x8FDB;&#x5165;&#x3010;<a href="/@manage/storages">&#x7BA1;&#x7406;/&#x5B58;&#x50A8;</a>&#x3011;<br>&#x9875;&#x9762;&#x6302;&#x8F7D;&#x7F51;&#x76D8;</li></ul></div>' WHERE key='announcement';"
-			sleep 1
-		fi
+            echo "检查 openlist 是否正常运行"
+            return 1
+        fi
     fi
-	mv $QPKG_ROOT/sqlite3 /dev/null
-	$QPKG_ROOT/alist --force-bin-dir admin
 }
